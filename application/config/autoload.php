@@ -103,7 +103,7 @@ $autoload['helper'] = array();
 | config files.  Otherwise, leave it blank.
 |
 */
-$autoload['config'] = array();
+$autoload['config'] = array('configs/system_status','tables/table_system','tables/table_login');
 
 /*
 | -------------------------------------------------------------------
