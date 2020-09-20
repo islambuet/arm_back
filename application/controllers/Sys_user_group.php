@@ -16,6 +16,17 @@ class Sys_user_group extends Root_Controller
         $ajax['permissions']=array('action0'=>1,'action1'=>1,'action2'=>1,'action3'=>1,'action4'=>1,'action5'=>1,'action6'=>1,'action7'=>1,'action8'=>1);
         $table_fields = $this->db->field_data(TABLE_SYSTEM_USER_GROUP);
         $ajax["default_item"]=array();
+        //$ajax['hidden_columns']=array('status');
+        $ajax['hidden_columns']=array();
+        if($ajax['permissions']['action8']==1)
+        {
+            $result=Query_helper::get_info(TABLE_SYSTEM_USER_HIDDEN_COLUMNS,'*',array('controller="Sys_user_group"','method="list"','user_id=1'),1);
+            if($result && $result['columns'])
+            {
+                $ajax['hidden_columns']=json_decode($result['columns'],true);
+            }
+            //$ajax['hidden_columns']=array('status');
+        }
         foreach ($table_fields as $field)
         {
             $ajax["default_item"][$field->name]=$field->default;
