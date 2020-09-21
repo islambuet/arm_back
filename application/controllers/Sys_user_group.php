@@ -104,22 +104,37 @@ class Sys_user_group extends Root_Controller
         //save token
         $ajax['error_type']='';
         $item_id=$this->input->post('item_id');
-        $ajax['data']=$this->input->post();
-        /*$data=$this->input->post('item');
+        $user_group=Query_helper::get_info(TABLE_SYSTEM_USER_GROUP,'*',array('id ='.$item_id),1);//validation
+        $tasks=$this->input->post('tasks');
+        foreach($tasks as $task)
+        {
+            if(isset($task['actions']))
+            {
+                $task['actions'][0]=1;
+            }
+            else
+            {
+                $task['actions'][0]=0;
+            }
+            for($i=0;$i<Module_task_helper::$MAX_MODULE_ACTIONS;$i++)
+            {
+                $user_group['action_'.$i]=str_replace(','.$task['task_id'].',',',' ,$user_group['action_'.$i]);//remove the task from action
+                if(isset($task['actions'][$i]))
+                {
+                    if(($task['actions'][$i])==1)
+                    {
+                        $user_group['action_'.$i].=$task['task_id'].',';//add the task into action
+                    }
+                }
+
+            }
+
+        }
         $time = time();
         $this->db->trans_start();  //DB Transaction Handle START
-        if($item_id>0)
-        {
-            $data['user_updated'] = $user->id;;
-            $data['date_updated'] = $time;
-            Query_helper::update(TABLE_SYSTEM_USER_GROUP,$data,array("id = ".$item_id));
-        }
-        else
-        {
-            $data['user_created'] = $user->id;
-            $data['date_created'] = time();
-            Query_helper::add(TABLE_SYSTEM_USER_GROUP,$data);
-        }
+        $data['user_updated'] = $user->id;;
+        $data['date_updated'] = $time;
+        Query_helper::update(TABLE_SYSTEM_USER_GROUP,$user_group,array("id = ".$item_id));
         //update token
         //$ajax[token_save]=new token
         $this->db->trans_complete();   //DB Transaction Handle END
@@ -130,7 +145,7 @@ class Sys_user_group extends Root_Controller
         else
         {
             $ajax['error_type']='Save Error';
-        }*/
+        }
         $this->json_return($ajax);
     }
 
