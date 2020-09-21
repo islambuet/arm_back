@@ -31,6 +31,15 @@ class Sys_user_group extends Root_Controller
         {
             $ajax["default_item"][$field->name]=$field->default;
         }
+        $ajax['max_modules_tasks_level']=1;
+        $ajax['modules_tasks']=array();
+        $modules_tasks=Module_task_helper::get_modules_tasks_table_tree();
+        if($modules_tasks)
+        {
+            $ajax['max_modules_tasks_level']=$modules_tasks['max_level'];
+            $ajax['modules_tasks']=$modules_tasks['tree'];
+        }
+        $ajax['max_module_task_action']=10;
 
         $this->json_return($ajax);
     }
