@@ -14,17 +14,13 @@ class Sys_module_task extends Root_Controller
     {
         $ajax['error_type']='';
         $ajax['permissions']=array('action0'=>1,'action1'=>1,'action2'=>1,'action3'=>1,'action4'=>1,'action5'=>1,'action6'=>1,'action7'=>1,'action8'=>1);
-        $ajax["default_item"] = Array(
-            'id' => 0,
-            'name_en' => 'English',
-            'name_bn' => 'Bangla',
-            'type' => '',
-            'parent' => 0,
-            'controller' => '',
-            'ordering' => 99,
-            'status' => SYSTEM_STATUS_ACTIVE,
-            'status_notification' => '',
-        );
+        $table_fields = $this->db->field_data(TABLE_SYSTEM_TASK);
+        $ajax["default_item"]=array();
+        //$ajax['hidden_columns']=array('status');
+        foreach ($table_fields as $field)
+        {
+            $ajax["default_item"][$field->name]=$field->default;
+        }
         $ajax['types']=array('MODULE','TASK','TASK_GROUP');
         //$ajax['modules_tasks']=Module_task_helper::get_modules_tasks_table_tree();
         $this->json_return($ajax);
