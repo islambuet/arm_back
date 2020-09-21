@@ -17,6 +17,10 @@ class Sys_user_group extends Root_Controller
         $table_fields = $this->db->field_data(TABLE_SYSTEM_USER_GROUP);
         $ajax["default_item"]=array();
         //$ajax['hidden_columns']=array('status');
+        foreach ($table_fields as $field)
+        {
+            $ajax["default_item"][$field->name]=$field->default;
+        }
         $ajax['hidden_columns']=array();
         if($ajax['permissions']['action8']==1)
         {
@@ -27,10 +31,6 @@ class Sys_user_group extends Root_Controller
             }
             //$ajax['hidden_columns']=array('status');
         }
-        foreach ($table_fields as $field)
-        {
-            $ajax["default_item"][$field->name]=$field->default;
-        }
         $ajax['max_modules_tasks_level']=1;
         $ajax['modules_tasks']=array();
         $modules_tasks=Module_task_helper::get_modules_tasks_table_tree();
@@ -39,7 +39,7 @@ class Sys_user_group extends Root_Controller
             $ajax['max_modules_tasks_level']=$modules_tasks['max_level'];
             $ajax['modules_tasks']=$modules_tasks['tree'];
         }
-        $ajax['max_module_task_action']=10;
+        $ajax['max_module_task_action']=Module_task_helper::$MAX_MODULE_ACTIONS;
 
         $this->json_return($ajax);
     }
@@ -53,7 +53,7 @@ class Sys_user_group extends Root_Controller
     {
         $ajax['error_type']='';
         $item_id=$this->input->post('item_id');
-        $ajax['item']=Query_helper::get_info(TABLE_SYSTEM_TASK,'*',array('id ='.$item_id),1);
+        $ajax['item']=Query_helper::get_info(TABLE_SYSTEM_USER_GROUP,'*',array('id ='.$item_id),1);
         $this->json_return($ajax);
     }
     public function save_item()
@@ -73,13 +73,13 @@ class Sys_user_group extends Root_Controller
         {
             $data['user_updated'] = $user->id;;
             $data['date_updated'] = $time;
-            Query_helper::update(TABLE_SYSTEM_TASK,$data,array("id = ".$item_id));
+            Query_helper::update(TABLE_SYSTEM_USER_GROUP,$data,array("id = ".$item_id));
         }
         else
         {
             $data['user_created'] = $user->id;
             $data['date_created'] = time();
-            Query_helper::add(TABLE_SYSTEM_TASK,$data);
+            Query_helper::add(TABLE_SYSTEM_USER_GROUP,$data);
         }
         //update token
         //$ajax[token_save]=new token
@@ -92,6 +92,45 @@ class Sys_user_group extends Root_Controller
         {
             $ajax['error_type']='Save Error';
         }
+        $this->json_return($ajax);
+    }
+    public function save_role()
+    {
+        //verify
+        //auth token
+        $user=new stdClass();
+        $user->id=1;
+        //permissions
+        //save token
+        $ajax['error_type']='';
+        $item_id=$this->input->post('item_id');
+        $ajax['data']=$this->input->post();
+        /*$data=$this->input->post('item');
+        $time = time();
+        $this->db->trans_start();  //DB Transaction Handle START
+        if($item_id>0)
+        {
+            $data['user_updated'] = $user->id;;
+            $data['date_updated'] = $time;
+            Query_helper::update(TABLE_SYSTEM_USER_GROUP,$data,array("id = ".$item_id));
+        }
+        else
+        {
+            $data['user_created'] = $user->id;
+            $data['date_created'] = time();
+            Query_helper::add(TABLE_SYSTEM_USER_GROUP,$data);
+        }
+        //update token
+        //$ajax[token_save]=new token
+        $this->db->trans_complete();   //DB Transaction Handle END
+        if ($this->db->trans_status() === TRUE)
+        {
+            $ajax['error_type']='';
+        }
+        else
+        {
+            $ajax['error_type']='Save Error';
+        }*/
         $this->json_return($ajax);
     }
 
