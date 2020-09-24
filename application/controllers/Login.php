@@ -15,10 +15,7 @@ class Login extends Root_controller {
 
         $post = $this->input->post();
         $ajax['post'] = $post;
-        $ajax['error']['error_status'] = false;
-        $ajax['error']['error_message'] = "";
-        //$this->json_return($ajax);
-        //$post['device']=array('token_device'=>$post['tokenDevice']); // optional just check
+        $ajax['error']['error_type'] = "";
         $time=time();
         $user=Query_helper::get_info(TABLE_LOGIN_SETUP_USER,'*',array('user_name ="'.$post['user_name'].'"', 'status ="'.SYSTEM_STATUS_ACTIVE.'"'),1);
         if($user){
@@ -52,36 +49,33 @@ class Login extends Root_controller {
                         $mobile_no=$user_info['mobile_no'];
                         // Mobile_sms_helper::send_sms(Mobile_sms_helper::$API_SENDER_ID_MALIK_SEEDS,$mobile_no,sprintf($this->lang->line('SMS_LOGIN_OTP'),$verification_code),'text');
                         // $this->session->set_userdata("login_mobile_verification_id", $verification_id);
-                        $ajax = array('status_code'=>'1101','token_sms'=>$token_sms_generated,'message'=>$verification_code,'message_warning'=>1101);
+                        $ajax = array('error_type'=>'OTP_VERIFICATION_REQUIRED','token_sms'=>$token_sms_generated,'otp'=>$verification_code);
                         $ajax['user'] = array();
                         $this->json_return($ajax);
                     } else {
                         //mobile number not set
-                        $ajax = array('status_code'=>'1100','message'=>$this->lang->line('MSG_LOGIN_FAIL_1100'),'message_warning'=>1100);
+                        $ajax = array('error_type'=>'MOBILE_NUMBER_NOT_FOUND');
                         $this->json_return($ajax);
                     }
                 } else {
                     /* login  */
                     $data = $this->doLogin($post['device'], $user['id']);
                     $ajax['user'] = $data;
+                    $ajax['task'] = [];
                     $this->json_return($ajax);
                 }
-                /*$ajax['device'] = $mobile_verification_required;
-                $ajax['user'] = $user;
-                $this->json_return($ajax);*/
             } else {
                 /* wrong password counting query */
-                $result=Query_helper::get_info(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,array('config_value'),array('purpose ="' .$this->config->item('system_purpose_login_max_wrong_password').'"','status ="'.$this->config->item('system_status_active').'"'),1);
-
+                $result=Query_helper::get_info(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,array('config_value'),array('purpose ="' .SYSTEM_PURPOSE_LOGIN_MAX_WRONG_PASSWORD.'"','status ="'.SYSTEM_STATUS_ACTIVE.'"'),1);
                 $data=array();
                 $data['password_wrong_consecutive']=$user['password_wrong_consecutive']+1;
                 $data['password_wrong_total']=$user['password_wrong_total']+1;
+                $password_remaining=($result['config_value']+1)-$data['password_wrong_consecutive'];
 
-                /*if($data['password_wrong_consecutive']<=$result['config_value'])//3ed digit 0
+                if($data['password_wrong_consecutive']<=$result['config_value'])//3ed digit 0
                 {
-                    $message_warning=sprintf($this->lang->line('WARNING_LOGIN_FAIL_100'),$result['config_value']-$data['password_wrong_consecutive']+1);
                     Query_helper::update(TABLE_LOGIN_SETUP_USER,$data,array("id = ".$user['id']),false);
-                    $ajax = array('status_code'=>'100','message'=>$this->lang->line('MSG_LOGIN_FAIL_100'),'message_warning'=>100);
+                    $ajax = array('error_type'=>'PASSWORD_INCORRECT','remaining'=>$password_remaining);
                     $this->json_return($ajax);
                 }
                 else//3rd digit 1
@@ -91,69 +85,70 @@ class Login extends Root_controller {
                     $data['date_status_changed'] = $time;
                     $data['user_status_changed'] = -1;
                     Query_helper::update(TABLE_LOGIN_SETUP_USER,$data,array("id = ".$user['id']),false);
-                    $ajax = array('status_code'=>'101','message'=>$this->lang->line('MSG_LOGIN_FAIL_101'),'message_warning'=>101);
+                    $ajax = array('error_type'=>'PASSWORD_RETRY_EXCEEDED');
                     $this->json_return($ajax);
-                }*/
+                }
             }
         } else {
-            $ajax = array('status_code'=>'102','message'=>102,'message_warning'=>'');
+            $ajax = array('error_type'=>'USER_NOT_FOUND');
             $this->json_return($ajax);
         }
     }
     public function loginSMS(){
         $time = time();
         $post = $this->input->post();
-        $post['device']=array('token_device'=>$post['tokenDevice']); // optional just check
-        $ajax['post'] = $post;
+        /*$post['device']=array('token_device'=>$post['tokenDevice']); // optional just check
+        $ajax['post'] = $post;*/
         /*$user_name = $post['user_name'];
         $user_password = $post['password'];*/
         $otp = $post['otp'];
-        //$verification_id=openssl_decrypt($post['token_sms'],Api_maraj::$encrypted_decrypted_code,Api_maraj::$encrypted_decrypted_key);
         $verification_id = Encrypt_decrypt_helper::get_encrypt($post['token_sms']);
         if(isset($post['otp']) && $post['otp']){
             $item=Query_helper::get_info(TABLE_SYSTEM_HISTORY_LOGIN_VERIFICATION_CODE,'*',array('id ="'.$verification_id.'"','code_verification ="'.$otp.'"'),1);
             if($item){
-                if(($item['status_used'])==$this->config->item('system_status_yes')){
-                    $ajax = array('status_code'=>'110','message'=>$this->lang->line('MSG_LOGIN_VERIFICATION_FAIL_110'));
+                if(($item['status_used'])==SYSTEM_STATUS_YES){
+                    $ajax = array('error_type'=>'OTP_ALREADY_USED');
                     $this->json_return($ajax);
                 } else {
                     if(($time-$item['date_created'])>User_helper::$mobile_verification_code_expires){
-                        $ajax = array('status_code'=>'1110','message'=>$this->lang->line('MSG_LOGIN_VERIFICATION_FAIL_1110'));
+                        $ajax = array('error_type'=>'OTP_EXPIRED');
                         $this->json_return($ajax);
                     } else {
                         //$user=Query_helper::get_info(TABLE_LOGIN_SETUP_USER,'*',array('user_name ="'.$user_name.'"', 'status ="'.$this->config->item('system_status_active').'"'),1);
                         $results = Query_helper::get_info(TABLE_SYSTEM_HISTORY_LOGIN_VERIFICATION_CODE,'*',array('user_id ="'.$item['user_id'].'"'),5,array('id'=>'DESC'));
                         $number_of_verification_code=0;
                         foreach($results as $result){
-                            if($result['status_used'] == $this->config->item('system_status_yes')){
+                            if($result['status_used'] == SYSTEM_STATUS_YES){
                                 $number_of_verification_code += 1;
                             }
                         }
                         //if(sizeof($number_of_verification_code)>Api_maraj::$number_of_verification_code_try){
-                        if(sizeof($number_of_verification_code)>5){
+                        //if(sizeof($number_of_verification_code)>5){
+                        if($number_of_verification_code>5){
                             $data=array(
-                                'status' => $this->config->item('system_status_yes')
+                                'status' => SYSTEM_STATUS_YES
                             );
                             Query_helper::update(TABLE_LOGIN_SETUP_USER,$data,array("id = ".$item['user_id']),false);
-                            $ajax = array('status_code'=>'302','message'=>302);
+                            $ajax = array('status_code'=>'302');
                             $this->json_return($ajax);
                         }
                         $data=array();
-                        $data['status_used']=$this->config->item('system_status_yes');
+                        $data['status_used']=SYSTEM_STATUS_YES;
                         $data['date_updated']=$time;
                         Query_helper::update(TABLE_SYSTEM_HISTORY_LOGIN_VERIFICATION_CODE,$data,array("id = ".$item['id']),false);
 
                         $data = $this->doLogin($post['device'], $item['user_id']);
                         $ajax['user'] = $data;
+                        $ajax['task'] = [];
                         $this->json_return($ajax);
                     }
                 }
             } else {
-                $ajax = array('status_code'=>'301','message'=>301);
+                $ajax = array('error_type'=>'OTP_INCORRECT');
                 $this->json_return($ajax);
             }
         } else {
-            $ajax = array('status_code'=>'300','message'=>300);
+            $ajax = array('error_type'=>'OTP_NOT_SEND');
             $this->json_return($ajax);
         }
     }
@@ -163,7 +158,7 @@ class Login extends Root_controller {
         if($userInfo['time_mobile_authentication_off_end']>$time){ // own mobile verification setting check
             $mobile_verification_required=false;
         } else {
-            $result=Query_helper::get_info(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,array('config_value'),array('purpose ="' .$this->config->item('system_purpose_login_status_mobile_verification').'"','status ="'.$this->config->item('system_status_active').'"'),1);
+            $result=Query_helper::get_info(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,array('config_value'),array('purpose ="' .SYSTEM_PURPOSE_LOGIN_STATUS_MOBILE_VERIFICATION.'"','status ="'.SYSTEM_STATUS_ACTIVE.'"'),1);
             if($result && ($result['config_value']!=1)){  // global mobile verification setting check
                 $mobile_verification_required=false;
             } else {
@@ -175,21 +170,17 @@ class Login extends Root_controller {
                     {
                         $max_logged_browser=$userInfo['max_logged_browser'];
                     }
-                    $this->db->from($this->config->item('table_login_user_sessions').' us');
+                    $this->db->from(TABLE_LOGIN_USER_SESSIONS.' us');
                     $this->db->select('us.id, us.device_id, us.user_id, us.token_auth, ud.token_device');
                     $this->db->join(TABLE_LOGIN_USER_DEVICES.' ud','ud.id = us.device_id');
                     $this->db->where('us.user_id',$userInfo['id']);
                     $this->db->order_by('us.time_expire DESC');
                     $this->db->limit($max_logged_browser);
                     $results=$this->db->get()->result_array();
-
                     foreach($results as $result){
-                        // echo $device['token_device'] ."==".$device['device_id'] ."==". $data_device['id']."<br />";
                         if($result['device_id'] == $item_device['id']){
                             $mobile_verification_required=false;
-                            // echo $device['device_id'] ."==". $data_device['id'];
                             break;
-
                         }
                     }
                 }
@@ -226,24 +217,13 @@ class Login extends Root_controller {
             );
             $device_id=Query_helper::add(TABLE_LOGIN_USER_DEVICES,$data_device,false);
         }
-
-        /*$this->db->from($this->config->item('table_login_user_sessions').' user_sessions');
-        $this->db->select('user_sessions.id');
-        $this->db->join(TABLE_LOGIN_SETUP_USER.' user','user.id = user_sessions.user_id');
-        $this->db->where('user.status',$this->config->item('system_status_active'));
-        $this->db->join(TABLE_LOGIN_SETUP_USER_INFO.' user_info','user_info.user_id = user.id AND user_info.revision = 1');
-        $this->db->select('user_info.name user_full_name, user_info.user_group');
-        $this->db->where('user_sessions.user_id',$user_id);
-        $this->db->where('user_sessions.device_id',$device_id);
-        $this->db->where('user_sessions.status',$this->config->item('system_status_yes'));
-        $result = $this->db->get()->row_array();*/
-        $result = Query_helper::get_info($this->config->item('table_login_user_sessions'),array('*'),array('user_id ="' .$user_id.'"', 'device_id ="' .$device_id.'"'),1);
+        $result = Query_helper::get_info(TABLE_LOGIN_USER_SESSIONS,array('*'),array('user_id ="' .$user_id.'"', 'device_id ="' .$device_id.'"'),1);
         if($result){
             $data_session = array(
                 'token_auth'=> $token_auth_generated,
                 'time_expire'=> $time,
             );
-            Query_helper::update($this->config->item('table_login_user_sessions'),$data_session,array("id = ".$result['id']),false);
+            Query_helper::update(TABLE_LOGIN_USER_SESSIONS,$data_session,array("id = ".$result['id']),false);
         } else {
             $data_session = array(
                 'user_id'=> $user_id,
@@ -251,7 +231,7 @@ class Login extends Root_controller {
                 'token_auth'=> $token_auth_generated,
                 'time_expire'=> $time,
             );
-            Query_helper::add($this->config->item('table_login_user_sessions'),$data_session,false);
+            Query_helper::add(TABLE_LOGIN_USER_SESSIONS,$data_session,false);
         }
 
         $this->db->from(TABLE_LOGIN_SETUP_USER.' user');
@@ -275,7 +255,7 @@ class Login extends Root_controller {
             'user_group' => $result['user_group'],
         );
         $deviceToken['token_device']=$token_device;
-        $error['status_code']='';
+        $error['error_type']='';
         return array('error'=>$error,'user'=>$user,'device'=>$deviceToken);
     }
 } 
