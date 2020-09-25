@@ -98,10 +98,6 @@ class Query_helper
         else
         {
             $CI->db->select($field_names);
-<<<<<<< HEAD
-
-=======
->>>>>>> maraj
         }
 
         foreach($conditions as $condition)
@@ -114,10 +110,6 @@ class Query_helper
             {
                 $CI->db->order_by($order);
             }
-<<<<<<< HEAD
-
-=======
->>>>>>> maraj
         }
         if($limit==0)
         {
