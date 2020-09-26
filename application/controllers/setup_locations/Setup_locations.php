@@ -16,50 +16,38 @@ class Setup_locations extends Root_Controller
         $user_group=Query_helper::get_info(TABLE_SYSTEM_USER_GROUP,'*',array('id =1'),1);
         $task_location=Query_helper::get_info(TABLE_SYSTEM_TASK,array('id'),array('controller ="Setup_locations"'),1);
         $sub_tasks=Query_helper::get_info(TABLE_SYSTEM_TASK,array(),array('parent ='.$task_location['id']),0,0,array('ordering ASC'));
-        $ajax['tasks']=array();
+        $ajax['permissions']=array();
         foreach($sub_tasks as $task)
         {
             if(strpos($user_group['action_0'],','.$task['id'].',')!==false)
             {
-                $ajax['tasks'][]=$task['controller'];
+                $permissions=array();
+                for($i=0;$i<Module_task_helper::$MAX_MODULE_ACTIONS;$i++)
+                {
+                    $permissions['action_'.$i]=(strpos($user_group['action_'.$i],','.$task['id'].',')!==false)?1:0;
+                }
+
+                $ajax['permissions'][$task['controller']]=$permissions;
             }
         }
-
-
-        /*$ajax['permissions']=array('action0'=>1,'action1'=>1,'action2'=>1,'action3'=>1,'action4'=>1,'action5'=>1,'action6'=>1,'action7'=>1,'action8'=>1);
-        $table_fields = $this->db->field_data(TABLE_SYSTEM_USER_GROUP);
-        $ajax["default_item"]=array();
-        //$ajax['hidden_columns']=array('status');
-        foreach ($table_fields as $field)
-        {
-            $ajax["default_item"][$field->name]=$field->default;
-        }
-        $ajax['hidden_columns']=array();
-        if($ajax['permissions']['action8']==1)
-        {
-            $result=Query_helper::get_info(TABLE_SYSTEM_USER_HIDDEN_COLUMNS,'*',array('controller="Sys_user_group"','method="list"','user_id=1'),1);
-            if($result && $result['columns'])
-            {
-                $ajax['hidden_columns']=json_decode($result['columns'],true);
-            }
-            //$ajax['hidden_columns']=array('status');
-        }
-        $ajax['max_modules_tasks_level']=1;
-        $ajax['modules_tasks']=array();
-        $modules_tasks=Module_task_helper::get_modules_tasks_table_tree();
-        if($modules_tasks)
-        {
-            $ajax['max_modules_tasks_level']=$modules_tasks['max_level'];
-            $ajax['modules_tasks']=$modules_tasks['tree'];
-        }
-        $ajax['max_module_task_action']=Module_task_helper::$MAX_MODULE_ACTIONS;*/
-
         $this->json_return($ajax);
     }
-    public function get_items()
+    public function get_items_region()
     {
         $ajax['error_type']='';
-        $ajax['items']=Query_helper::get_info(TABLE_SYSTEM_USER_GROUP,'*',array('status!="'.SYSTEM_STATUS_DELETE.'"'),0,0,array('ordering ASC'));
+        $ajax['items']=Query_helper::get_info(TABLE_LOGIN_LOCATION_REGION,'*',array('status!="'.SYSTEM_STATUS_DELETE.'"'),0,0,array('ordering ASC'));
+        $this->json_return($ajax);
+    }
+    public function get_items_area()
+    {
+        $ajax['error_type']='';
+        $ajax['items']=Query_helper::get_info(TABLE_LOGIN_LOCATION_AREA,'*',array('status!="'.SYSTEM_STATUS_DELETE.'"'),0,0,array('ordering ASC'));
+        $this->json_return($ajax);
+    }
+    public function get_items_territory()
+    {
+        $ajax['error_type']='';
+        $ajax['items']=Query_helper::get_info(TABLE_LOGIN_LOCATION_TERRITORY,'*',array('status!="'.SYSTEM_STATUS_DELETE.'"'),0,0,array('ordering ASC'));
         $this->json_return($ajax);
     }
     public function get_item()
