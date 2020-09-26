@@ -5,7 +5,7 @@ abstract class Root_Controller extends CI_Controller
     function __construct()
     {
         parent::__construct();
-
+        Configuration_helper::load_config();
     }
     public function json_return($array)
     {

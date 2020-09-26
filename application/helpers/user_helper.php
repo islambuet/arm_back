@@ -4,7 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class User_helper
 {
     public static $logged_user = null;
-    public static $mobile_verification_code_expires = 30000000;//60*5--5minutes
+    public static $mobile_verification_code_expires = 20;//60*5--5minutes
     public static $mobile_verification_cookie_expires = 864000;//60*60*24*10--10days
     public static $mobile_verification_cookie_prefix = 'login_mobile_verification_2018_19_';//60*60*24*10--10days
     function __construct($id)

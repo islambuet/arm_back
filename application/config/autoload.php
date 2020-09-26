@@ -89,7 +89,7 @@ $autoload['drivers'] = array();
 |
 |	$autoload['helper'] = array('url', 'file');
 */
-$autoload['helper'] = array('query','module_task','system','user','encrypt_decrypt','mobile_sms');
+$autoload['helper'] = array('query','module_task','system','user','configuration');
 
 /*
 | -------------------------------------------------------------------

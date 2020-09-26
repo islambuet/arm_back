@@ -10,12 +10,13 @@ class Login extends Root_controller {
     public function __construct(){
         parent::__construct();
         $this->message="";
+        $this->load->helper('encrypt_decrypt');
     }
     function index(){
-
         $post = $this->input->post();
         $ajax['post'] = $post;
         $ajax['error']['error_type'] = "";
+        $token_device = isset($post['device']['token_device'])?$post['device']['token_device']:'';
         $time=time();
         $user=Query_helper::get_info(TABLE_LOGIN_SETUP_USER,'*',array('user_name ="'.$post['user_name'].'"', 'status ="'.SYSTEM_STATUS_ACTIVE.'"'),1);
         if($user){
@@ -25,7 +26,7 @@ class Login extends Root_controller {
                     $data['password_wrong_consecutive']=0;
                     Query_helper::update(TABLE_LOGIN_SETUP_USER,$data,array("id = ".$user['id']),false);
                 }
-                $mobile_verification_required = $this->userMobileVerification($user, $post['device']);
+                $mobile_verification_required = $this->userMobileVerification($user, $token_device);
                 if($mobile_verification_required){
                     /* send opt & return blank user info */
                     $user_info=Query_helper::get_info(TABLE_LOGIN_SETUP_USER_INFO,'*',array('user_id ='.$user['id'] ,'revision =1'),1);
@@ -66,13 +67,12 @@ class Login extends Root_controller {
                 }
             } else {
                 /* wrong password counting query */
-                $result=Query_helper::get_info(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,array('config_value'),array('purpose ="' .SYSTEM_PURPOSE_LOGIN_MAX_WRONG_PASSWORD.'"','status ="'.SYSTEM_STATUS_ACTIVE.'"'),1);
+                $get_max_wrong_password = Configuration_helper::get_max_wrong_password();
                 $data=array();
                 $data['password_wrong_consecutive']=$user['password_wrong_consecutive']+1;
                 $data['password_wrong_total']=$user['password_wrong_total']+1;
-                $password_remaining=($result['config_value']+1)-$data['password_wrong_consecutive'];
-
-                if($data['password_wrong_consecutive']<=$result['config_value'])//3ed digit 0
+                $password_remaining=($get_max_wrong_password+1)-$data['password_wrong_consecutive'];
+                if($data['password_wrong_consecutive']<=$get_max_wrong_password)//3ed digit 0
                 {
                     Query_helper::update(TABLE_LOGIN_SETUP_USER,$data,array("id = ".$user['id']),false);
                     $ajax = array('error_type'=>'PASSWORD_INCORRECT','remaining'=>$password_remaining);
@@ -94,7 +94,7 @@ class Login extends Root_controller {
             $this->json_return($ajax);
         }
     }
-    public function loginSMS(){
+    public function login_sms(){
         $time = time();
         $post = $this->input->post();
         /*$post['device']=array('token_device'=>$post['tokenDevice']); // optional just check
@@ -152,28 +152,29 @@ class Login extends Root_controller {
             $this->json_return($ajax);
         }
     }
-    private function userMobileVerification($userInfo, $device){
+    private function userMobileVerification($user, $token_device){
         $time = time();
         $mobile_verification_required=true;
-        if($userInfo['time_mobile_authentication_off_end']>$time){ // own mobile verification setting check
+        if($user['time_mobile_authentication_off_end']>$time){ // own mobile verification setting check
             $mobile_verification_required=false;
         } else {
-            $result=Query_helper::get_info(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,array('config_value'),array('purpose ="' .SYSTEM_PURPOSE_LOGIN_STATUS_MOBILE_VERIFICATION.'"','status ="'.SYSTEM_STATUS_ACTIVE.'"'),1);
-            if($result && ($result['config_value']!=1)){  // global mobile verification setting check
+            //$result=Query_helper::get_info(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,array('config_value'),array('purpose ="' .SYSTEM_PURPOSE_LOGIN_STATUS_MOBILE_VERIFICATION.'"','status ="'.SYSTEM_STATUS_ACTIVE.'"'),1);
+            $get_mobile_verification_status = Configuration_helper::get_mobile_verification_status();
+            if($get_mobile_verification_status!=1){  // global mobile verification setting check
                 $mobile_verification_required=false;
             } else {
                 // $mobile_verification_required=true;
-                $item_device=Query_helper::get_info(TABLE_LOGIN_USER_DEVICES,array('*'),array('token_device ="' .$device['token_device'].'"'),1);
+                $item_device=Query_helper::get_info(TABLE_LOGIN_USER_DEVICES,array('*'),array('token_device ='.$token_device),1);
                 if($item_device){ // check number of device allow for me.
                     $max_logged_browser=1;
-                    if($userInfo['max_logged_browser']>0)
+                    if($user['max_logged_browser']>0)
                     {
-                        $max_logged_browser=$userInfo['max_logged_browser'];
+                        $max_logged_browser=$user['max_logged_browser'];
                     }
                     $this->db->from(TABLE_LOGIN_USER_SESSIONS.' us');
                     $this->db->select('us.id, us.device_id, us.user_id, us.token_auth, ud.token_device');
                     $this->db->join(TABLE_LOGIN_USER_DEVICES.' ud','ud.id = us.device_id');
-                    $this->db->where('us.user_id',$userInfo['id']);
+                    $this->db->where('us.user_id',$user['id']);
                     $this->db->order_by('us.time_expire DESC');
                     $this->db->limit($max_logged_browser);
                     $results=$this->db->get()->result_array();
@@ -188,14 +189,14 @@ class Login extends Root_controller {
         }
         return $mobile_verification_required;
     }
-    private function doLogin($device, $user_id){
+    private function doLogin($token_device, $user_id){
         $time=time();
         $string_to_encrypt=$time.'_'.$user_id;
         $token_auth_generated = Encrypt_decrypt_helper::get_encrypt($string_to_encrypt);
 
-        if(isset($device['token_device']) && $device['token_device']){
-            $result=Query_helper::get_info(TABLE_LOGIN_USER_DEVICES,array('*'),array('token_device ="' .$device['token_device'].'"'),1);
-            $token_device = $result['token_device'];
+        if($token_device){
+            $result=Query_helper::get_info(TABLE_LOGIN_USER_DEVICES,array('*'),array('token_device ="' .$token_device.'"'),1);
+            $token_device_get = $result['token_device'];
             if($result){
                 $device_id = $result['id'];
                 // $data_device = $device;
@@ -208,7 +209,7 @@ class Login extends Root_controller {
         } else {
 
             $token_device_generated= Encrypt_decrypt_helper::get_encrypt($time);
-            $token_device = $token_device_generated;
+            $token_device_get = $token_device_generated;
             $data_device=array(
                 'token_device' => $token_device_generated,
                 'device_info' => json_encode(array('device_name'=>'SAMSUNG', 'device_code'=>'A20-2020', 'device_model'=>'A20')),
@@ -254,8 +255,8 @@ class Login extends Root_controller {
             'user_full_name' => $result['user_full_name'],
             'user_group' => $result['user_group'],
         );
-        $deviceToken['token_device']=$token_device;
+        $device['token_device']=$token_device_get;
         $error['error_type']='';
-        return array('error'=>$error,'user'=>$user,'device'=>$deviceToken);
+        return array('error'=>$error,'user'=>$user,'device'=>$device);
     }
 } 
