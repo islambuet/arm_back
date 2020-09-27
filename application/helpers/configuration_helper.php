@@ -32,6 +32,10 @@ class Configuration_helper
     {
         return isset(Configuration_helper::$config['LOGIN_OTP_EXPIRES'])?Configuration_helper::$config['LOGIN_OTP_EXPIRES']:2000;
     }
+    public static function get_otp_interval()
+    {
+        return isset(Configuration_helper::$config['LOGIN_OTP_INTERVAL'])?Configuration_helper::$config['LOGIN_OTP_INTERVAL']:10;
+    }
     /* END LOGIN PURPOSE*/
 
 }

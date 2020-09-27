@@ -12,19 +12,19 @@ class Query_helper
             $id = $CI->db->insert_id();
             if($save_history)
             {
-//                $user = User_helper::get_user();
-//                $time=time();
-//                $historyData = Array(
-//                    'controller'=>$CI->router->class,
-//                    'method'=>$CI->router->method,
-//                    'table_id'=>$id,
-//                    'table_name'=>$table_name,
-//                    'data'=>json_encode($data),
-//                    'user_id'=>$user->id,
-//                    'action'=>'INSERT',
-//                    'date'=>$time
-//                );
-//                $CI->db->insert(TABLE_SYSTEM_HISTORY, $historyData);
+                $user = User_helper::get_user();
+                $time=time();
+                $historyData = Array(
+                    'controller'=>$CI->router->class,
+                    'method'=>$CI->router->method,
+                    'table_id'=>$id,
+                    'table_name'=>$table_name,
+                    'data'=>json_encode($data),
+                    'user_id'=>$user?$user->id:-1,
+                    'action'=>'INSERT',
+                    'date'=>$time
+                );
+                $CI->db->insert(TABLE_SYSTEM_HISTORY, $historyData);
             }
             return $id;
         }
@@ -56,24 +56,24 @@ class Query_helper
         {
             if($save_history)
             {
-//                $user = User_helper::get_user();
-//                $time=time();
-//                foreach($rows as $row)
-//                {
-//
-//                    $historyData = Array(
-//                        'controller'=>$CI->router->class,
-//                        'method'=>$CI->router->method,
-//                        'table_id'=>$row['id'],
-//                        'table_name'=>$table_name,
-//                        'data'=>json_encode($data),
-//                        'user_id'=>$user->id,
-//                        'action'=>'UPDATE',
-//                        'date'=>$time
-//                    );
-//
-//                    $CI->db->insert(TABLE_SYSTEM_HISTORY, $historyData);
-//                }
+                $user = User_helper::get_user();
+                $time=time();
+                foreach($rows as $row)
+                {
+
+                    $historyData = Array(
+                        'controller'=>$CI->router->class,
+                        'method'=>$CI->router->method,
+                        'table_id'=>$row['id'],
+                        'table_name'=>$table_name,
+                        'data'=>json_encode($data),
+                        'user_id'=>$user?$user->id:-1,
+                        'action'=>'UPDATE',
+                        'date'=>$time
+                    );
+
+                    $CI->db->insert(TABLE_SYSTEM_HISTORY, $historyData);
+                }
             }
             return true;
 

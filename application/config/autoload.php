@@ -117,7 +117,7 @@ $autoload['config'] =array('configs/system_status','tables/table_system','tables
 | "codeigniter_lang.php" would be referenced as array('codeigniter');
 |
 */
-$autoload['language'] = array();
+$autoload['language'] = array('language');
 
 /*
 | -------------------------------------------------------------------

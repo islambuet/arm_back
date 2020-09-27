@@ -6,6 +6,7 @@
  */
 $config['test']= 'test';//dummy config to avoid loading error config file
 CONST TABLE_LOGIN_SETUP_USER =  'arm_login_2021.login_setup_user';
+CONST TABLE_LOGIN_SETUP_USER_HISTORY =  'arm_login_2021.login_setup_user_history';
 CONST TABLE_LOGIN_SETUP_USER_INFO =  'arm_login_2021.login_setup_user_info';
 CONST TABLE_LOGIN_USER_DEVICES =  'arm_login_2021.login_user_devices';
 CONST TABLE_LOGIN_USER_SESSIONS =  'arm_login_2021.login_user_sessions';

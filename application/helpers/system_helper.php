@@ -15,7 +15,7 @@ class System_helper
             return $time;
         }
     }
-    public static function history_save($table_name,$item_id,$current_value=array(),$new_value=array(),$remarks=array())
+    public static function history_save($table_name,$item_id,$value_old=array(),$value_new=array(),$remarks=array())
     {
         $CI =& get_instance();
         $time=time();
@@ -25,11 +25,11 @@ class System_helper
             'method'=>$CI->router->method,
             'remarks'=>json_encode($remarks),
             'item_id'=>$item_id,
-            'current_value'=>json_encode($current_value),
-            'new_value'=>json_encode($new_value),
+            'value_old'=>json_encode($value_old),
+            'value_new'=>json_encode($value_new),
             'date_created'=>$time,
             'date_created_string'=>date('d-M-Y h:i:s A',$time),
-            'user_created'=>$user->id
+            'user_created'=>$user?$user->id:-1
         );
         Query_helper::add($table_name,$data,false);
     }

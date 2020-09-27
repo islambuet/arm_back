@@ -36,7 +36,7 @@ class User_helper
         }
         else
         {
-            if($CI->session->userdata("user_id")!="")
+            /*if($CI->session->userdata("user_id")!="")
             {
                 $user = $CI->db->get_where($CI->config->item('table_login_setup_user'), array('id' => $CI->session->userdata('user_id'),'status'=>$CI->config->item('system_status_active')))->row();
                 if($user)
@@ -49,8 +49,8 @@ class User_helper
             else
             {
                 return null;
-            }
-
+            }*/
+            return User_helper::$logged_user;
         }
     }
 

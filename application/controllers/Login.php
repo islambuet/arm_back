@@ -11,14 +11,13 @@ class Login extends Root_controller {
         parent::__construct();
         $this->message="";
         $this->load->helper('encrypt_decrypt');
-
     }
     function index(){
-        // 3 item  post. 1. mobile_no, 2. password, 3. device['token_device']
+        // 3 item  post. 1. mobile_no, 2. password, 3. token_device
         $post = $this->input->post();
         /*$ajax['post'] = $post;
         $ajax['error']['error_type'] = "";*/
-        $token_device = isset($post['device']['token_device'])?$post['device']['token_device']:'';
+        $token_device = isset($post['token_device'])?$post['token_device']:'';
         $time=time();
         $user=Query_helper::get_info(TABLE_LOGIN_SETUP_USER,'*',array('mobile_no ="'.$post['mobile_no'].'"', 'status ="'.SYSTEM_STATUS_ACTIVE.'"'),1);
         if($user){
@@ -27,10 +26,43 @@ class Login extends Root_controller {
                     $data=array();
                     $data['password_wrong_consecutive']=0;
                     Query_helper::update(TABLE_LOGIN_SETUP_USER,$data,array("id = ".$user['id']),false);
+                    System_helper::history_save
+                    (
+                        TABLE_LOGIN_SETUP_USER_HISTORY,
+                        $user['id'],
+                        array
+                        (
+                            'password_wrong_consecutive'=>$user['password_wrong_consecutive']
+                        ),
+                        $data
+                    );
                 }
                 $mobile_verification_required = $this->user_mobile_verification($user, $token_device);
                 if($mobile_verification_required){
                     /* send opt & return blank user info */
+
+                    $result = Query_helper::get_info(TABLE_SYSTEM_HISTORY_LOGIN_OTP,'*',array('user_id ="'.$user['id'].'"', 'status_used = "'.SYSTEM_STATUS_NO.'"'),1,0,array('id DESC'));
+                    if($result && (($result['date_created']+Configuration_helper::get_otp_interval())>$time)){
+                        $ajax = array('error_type'=>'OTP_WAIT');
+                        $this->json_return($ajax);
+                    }
+
+                    /*$results = Query_helper::get_info(TABLE_SYSTEM_HISTORY_LOGIN_OTP,'*',array('user_id ="'.$user['id'].'"'),Configuration_helper::get_otp_limit_last_number(),0,array('id DESC'));
+                    $number_of_otp=0;
+                    foreach($results as $result){
+                        if($result['status_used'] == SYSTEM_STATUS_YES){
+                            $number_of_otp += 1;
+                        }
+                    }
+                    if($number_of_otp>Configuration_helper::get_number_of_otp_check()){
+                        $data=array(
+                            'status' => SYSTEM_STATUS_YES
+                        );
+                        Query_helper::update(TABLE_LOGIN_SETUP_USER,$data,array("id = ".$item['user_id']),false); // i think this is wrong query
+                        $ajax = array('status_code'=>'302');
+                        $this->json_return($ajax);
+                    }*/
+
                     //send verification code
                     $verification_code=mt_rand(1000,999999);
                     $data=array();
@@ -38,14 +70,11 @@ class Login extends Root_controller {
                     $data['otp']=$verification_code;
                     $data['date_created']=$time;
                     $verification_id=Query_helper::add(TABLE_SYSTEM_HISTORY_LOGIN_OTP,$data,false);
-
-                    $string_to_encrypt=$verification_id;
-                    $token_sms_generated=Encrypt_decrypt_helper::get_encrypt($string_to_encrypt);
+                    $token_sms_generated=Encrypt_decrypt_helper::get_encrypt($verification_id);
 
                     $this->load->helper('mobile_sms');
-                    $this->lang->load('mobile_sms');
                     $mobile_no=$post['mobile_no'];
-                    // Mobile_sms_helper::send_sms(Mobile_sms_helper::$API_SENDER_ID_MALIK_SEEDS,$mobile_no,sprintf($this->lang->line('SMS_LOGIN_OTP'),$verification_code),'text');
+                    // Mobile_sms_helper::send_sms(Mobile_sms_helper::$API_SENDER_ID_MALIK_SEEDS,$mobile_no,sprintf($this->lang->line('LOGIN_SMS_LOGIN_OTP'),$verification_code),'text');
                     // $this->session->set_userdata("login_mobile_verification_id", $verification_id);
                     $ajax = array('error_type'=>'OTP_VERIFICATION_REQUIRED','token_sms'=>$token_sms_generated,'otp'=>$verification_code);
                     $ajax['user'] = array();
@@ -53,7 +82,7 @@ class Login extends Root_controller {
 
                 } else {
                     /* login  */
-                    $data = $this->do_login($post['device'], $user['id']);
+                    $data = $this->do_login($user['id'],$token_device);
                     $ajax = $data;
                     $this->json_return($ajax);
                 }
@@ -63,21 +92,46 @@ class Login extends Root_controller {
                 $data=array();
                 $data['password_wrong_consecutive']=$user['password_wrong_consecutive']+1;
                 $data['password_wrong_total']=$user['password_wrong_total']+1;
-                $password_remaining=($get_max_wrong_password+1)-$data['password_wrong_consecutive'];
-                if($data['password_wrong_consecutive']<=$get_max_wrong_password)//3ed digit 0
+                $password_remaining=$get_max_wrong_password-$data['password_wrong_consecutive'];
+                if($password_remaining>-1)//3ed digit 0
                 {
                     Query_helper::update(TABLE_LOGIN_SETUP_USER,$data,array("id = ".$user['id']),false);
+                    System_helper::history_save
+                    (
+                        TABLE_LOGIN_SETUP_USER_HISTORY,
+                        $user['id'],
+                        array
+                        (
+                            'password_wrong_consecutive'=>$user['password_wrong_consecutive'],
+                            'password_wrong_total'=>$user['password_wrong_total']
+                        ),
+                        $data
+                    );
                     $ajax = array('error_type'=>'PASSWORD_INCORRECT','remaining'=>$password_remaining);
                     $this->json_return($ajax);
                 }
                 else//3rd digit 1
                 {
                     $data['status']=SYSTEM_STATUS_INACTIVE;
-                    $data['remarks_status_change']=sprintf($this->lang->line('REMARKS_USER_SUSPEND_WRONG_PASSWORD'),$data['password_wrong_consecutive']);
+                    $data['remarks_status_change']=sprintf($this->lang->line('LOGIN_REMARKS_USER_SUSPEND_PASSWORD_TRY_LIMIT_EXCEEDED'),$data['password_wrong_consecutive']);
                     $data['date_status_changed'] = $time;
                     $data['user_status_changed'] = -1;
                     Query_helper::update(TABLE_LOGIN_SETUP_USER,$data,array("id = ".$user['id']),false);
-                    $ajax = array('error_type'=>'PASSWORD_RETRY_EXCEEDED');
+
+                    System_helper::history_save
+                    (
+                        TABLE_LOGIN_SETUP_USER_HISTORY,
+                        $user['id'],
+                        array
+                        (
+                            'status'=>$user['status'],
+                            'remarks_status_change'=>$user['remarks_status_change'],
+                            'date_status_changed'=>$user['date_status_changed'],
+                            'user_status_changed'=>$user['user_status_changed']
+                        ),
+                        $data
+                    );
+                    $ajax = array('error_type'=>'USER_SUSPEND_PASSWORD_TRY_LIMIT_EXCEEDED');
                     $this->json_return($ajax);
                 }
             }
@@ -87,9 +141,10 @@ class Login extends Root_controller {
         }
     }
     public function login_sms(){
-        // 3 item  post. 1. otp, 2. token_sms, 3. device['token_device'] = full info
+        // 3 item  post. 1. otp, 2. token_sms, 3. token_device
         $time = time();
         $post = $this->input->post();
+        $token_device = isset($post['token_device'])?$post['token_device']:'';
         $verification_id = Encrypt_decrypt_helper::get_decrypt(isset($post['token_sms'])?$post['token_sms']:'');
         if(isset($post['otp']) && $post['otp']){
             $item=Query_helper::get_info(TABLE_SYSTEM_HISTORY_LOGIN_OTP,'*',array('id ="'.$verification_id.'"','otp ="'.$post['otp'].'"'),1);
@@ -102,20 +157,9 @@ class Login extends Root_controller {
                         $ajax = array('error_type'=>'OTP_EXPIRED');
                         $this->json_return($ajax);
                     } else {
-                        // discussion 108 - 124 line.
-                        $results = Query_helper::get_info(TABLE_SYSTEM_HISTORY_LOGIN_OTP,'*',array('user_id ="'.$item['user_id'].'"'),Configuration_helper::get_otp_limit_last_number(),0,array('id DESC'));
-                        $number_of_otp=0;
-                        foreach($results as $result){
-                            if($result['status_used'] == SYSTEM_STATUS_YES){
-                                $number_of_otp += 1;
-                            }
-                        }
-                        if($number_of_otp>Configuration_helper::get_number_of_otp_check()){
-                            $data=array(
-                                'status' => SYSTEM_STATUS_YES
-                            );
-                            Query_helper::update(TABLE_LOGIN_SETUP_USER,$data,array("id = ".$item['user_id']),false); // i think this is wrong query
-                            $ajax = array('status_code'=>'302');
+                        $result = Query_helper::get_info(TABLE_SYSTEM_HISTORY_LOGIN_OTP,'*',array('user_id ="'.$item['user_id'].'"'),1,0,array('id DESC'));
+                        if($verification_id != $result['id']){
+                            $ajax = array('error_type'=>'OTP_NOT_LAST');
                             $this->json_return($ajax);
                         }
                         $data=array();
@@ -123,7 +167,7 @@ class Login extends Root_controller {
                         $data['date_updated']=$time;
                         Query_helper::update(TABLE_SYSTEM_HISTORY_LOGIN_OTP,$data,array("id = ".$item['id']),false);
 
-                        $data = $this->do_login($post['device'], $item['user_id']);
+                        $data = $this->do_login($item['user_id'],$token_device);
                         $ajax = $data;
                         $this->json_return($ajax);
                     }
@@ -156,8 +200,7 @@ class Login extends Root_controller {
                         $max_logged_browser=$user['max_logged_browser'];
                     }
                     $this->db->from(TABLE_LOGIN_USER_SESSIONS.' us');
-                    $this->db->select('us.id, us.device_id, us.user_id, us.token_auth, ud.token_device');
-                    $this->db->join(TABLE_LOGIN_USER_DEVICES.' ud','ud.id = us.device_id');
+                    $this->db->select('us.id, us.device_id, us.user_id');
                     $this->db->where('us.user_id',$user['id']);
                     $this->db->order_by('us.time_expire DESC');
                     $this->db->limit($max_logged_browser);
@@ -173,13 +216,14 @@ class Login extends Root_controller {
         }
         return $mobile_verification_required;
     }
-    private function do_login($device, $user_id){
+    private function do_login($user_id,$token_device){
         $time=time();
         $token_auth_generated = Encrypt_decrypt_helper::get_encrypt('Auth_'.$time.'_'.$user_id);
         $token_csrf_generated = Encrypt_decrypt_helper::get_encrypt('CSRF_'.$time.'_'.$user_id);
-        if($device['token_device']){
-            $result=Query_helper::get_info(TABLE_LOGIN_USER_DEVICES,array('*'),array('token_device ="' .$device['token_device'].'"'),1);
-            $token_device = $result['token_device'];
+        //
+        if($token_device){
+            $result=Query_helper::get_info(TABLE_LOGIN_USER_DEVICES,array('*'),array('token_device ="' .$token_device.'"'),1);
+            $token_device_response = $result['token_device'];
             if($result){
                 $device_id = $result['id'];
                 // $data_device = $device;
@@ -191,12 +235,21 @@ class Login extends Root_controller {
             }
         } else {
 
-            $token_device_generated= Encrypt_decrypt_helper::get_encrypt($time);
-            $token_device = $token_device_generated;
+            $this->load->library('user_agent');
+
+            $token_device_response = Encrypt_decrypt_helper::get_encrypt($time);
+            $device_info = array(
+                'browser'=> $this->agent->browser(),
+                'version'=> $this->agent->version(),
+                'mobile'=> $this->agent->mobile(),
+                'robot'=> $this->agent->robot(),
+                'platform'=> $this->agent->platform(),
+                'agent_string'=> $this->agent->agent_string(),
+            );
             $data_device=array(
-                'token_device' => $token_device_generated,
-                'device_info' => json_encode($device),
-                'ip'=> '127.0.0.1',
+                'token_device' => $token_device_response,
+                'device_info' => json_encode($device_info),
+                'ip'=> $this->input->ip_address(),
                 'time_register' => $time
             );
             $device_id=Query_helper::add(TABLE_LOGIN_USER_DEVICES,$data_device,false);
@@ -205,7 +258,7 @@ class Login extends Root_controller {
         if($result){
             $data_session = array(
                 'token_auth'=> $token_auth_generated,
-                'time_expire'=> $time,
+                'time_start'=> $time,
                 'csrf_new'=> $token_csrf_generated,
                 'csrf_old'=> $result['csrf_new'],
             );
@@ -215,7 +268,7 @@ class Login extends Root_controller {
                 'user_id'=> $user_id,
                 'device_id'=> $device_id,
                 'token_auth'=> $token_auth_generated,
-                'time_expire'=> $time,
+                'time_start'=> $time,
                 'csrf_new'=> $token_csrf_generated,
             );
             Query_helper::add(TABLE_LOGIN_USER_SESSIONS,$data_session,false);
@@ -233,24 +286,11 @@ class Login extends Root_controller {
             return $return;
         }
 
-
-        /*$user['token_auth']=$token_auth_generated;
-        $user['token_csrf']='';
-        $user['token_device']=$token_device;
-        $user['id']=$user_id;
-        $user['info']=array(
-            'name_en' => $result['name_en'],
-            'name_bn' => $result['name_bn'],
-            'user_group_id' => $result['user_group_id'],
-        );
-        //$device['token_device']=$token_device;
-        $error['error_type']='';
-        return array('error'=>$error,'user'=>$user,'device'=>array('token_device'=>$token_device));*/
         $response = array();
         $response['error_type'] = '';
         $response['user']['token_auth']=$token_auth_generated;
         $response['user']['token_csrf'] = $token_csrf_generated;
-        $response['user']['token_device'] = $token_device;
+        $response['user']['token_device'] = $token_device_response;
         $response['user']['id'] = $result['id'];
         $response['user']['name_en'] = $result['name_en'];
         $response['user']['name_bn'] = $result['name_bn'];

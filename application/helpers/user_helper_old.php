@@ -112,7 +112,7 @@ class User_helper
                         $CI->load->helper('mobile_sms');
                         $CI->lang->load('mobile_sms');
                         $mobile_no=$user_info['mobile_no'];
-                        Mobile_sms_helper::send_sms(Mobile_sms_helper::$API_SENDER_ID_MALIK_SEEDS,$mobile_no,sprintf($CI->lang->line('SMS_LOGIN_OTP'),$verification_code),'text');
+                        Mobile_sms_helper::send_sms(Mobile_sms_helper::$API_SENDER_ID_MALIK_SEEDS,$mobile_no,sprintf($CI->lang->line('LOGIN_SMS_LOGIN_OTP'),$verification_code),'text');
                         $CI->session->set_userdata("login_mobile_verification_id", $verification_id);
                         return array('status_code'=>'1101','message'=>'','message_warning'=>$CI->lang->line('WARNING_LOGIN_FAIL_1101'));
                     }
