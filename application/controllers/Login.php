@@ -202,7 +202,7 @@ class Login extends Root_controller {
                     $this->db->from(TABLE_LOGIN_USER_SESSIONS.' us');
                     $this->db->select('us.id, us.device_id, us.user_id');
                     $this->db->where('us.user_id',$user['id']);
-                    $this->db->order_by('us.time_expire DESC');
+                    $this->db->order_by('us.time_start DESC');
                     $this->db->limit($max_logged_browser);
                     $results=$this->db->get()->result_array();
                     foreach($results as $result){
