@@ -11,12 +11,15 @@ class Users extends Root_Controller
         echo SYSTEM_STATUS_ACTIVE;
     }
     public function get_tasks() {
-        $ajax['error_type']='';
-        $ajax['tasks']=$this->get_users_tasks(1);
+        //$ajax['error_type']='';
+        $ajax['user'] = User_helper::get_user();
+        //$ajax['tasks']=$this->get_users_tasks($user);
+        //$ajax['tasks']=$this->get_users_tasks(1);
         $this->json_return($ajax);
     }
-    private function get_users_tasks($user_group_id)
+    private function get_users_tasks($user_group_id) // user parameter
     {
+        // if user == null return blank array
         $user_group=Query_helper::get_info(TABLE_SYSTEM_USER_GROUP,'*',array('id ='.$user_group_id),1);
         $role_data=array();
         if(strlen($user_group['action_0'])>1)
@@ -73,6 +76,9 @@ class Users extends Root_Controller
         }
 
         return $tree;
+    }
+    public function get_user(){
+
     }
 
 }

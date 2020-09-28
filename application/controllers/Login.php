@@ -274,16 +274,37 @@ class Login extends Root_controller {
             Query_helper::add(TABLE_LOGIN_USER_SESSIONS,$data_session,false);
         }
 
+        $actions = array();
+        for($i=0; $i<Module_task_helper::$MAX_MODULE_ACTIONS; $i++){
+            $actions[]='user_group.action_'.$i;
+        }
+        $action = implode(',', $actions);
+
         $this->db->from(TABLE_LOGIN_SETUP_USER.' user');
-        /*$this->db->join(TABLE_LOGIN_SETUP_USER_INFO.' user_info','user_info.user_id = user.id AND user_info.revision = 1');
-        $this->db->select('user_info.name user_full_name, user_info.user_group');*/
+        $this->db->join(TABLE_SYSTEM_USER_GROUP.' user_group', 'user_group.id = user.user_group_id');
+        $this->db->select("
+            user.id,
+            user.name_en,
+            user.name_bn"
+            );
+        $action?$this->db->select($action):'';
         $this->db->where('user.id',$user_id);
         $result = $this->db->get()->row_array();
         if(! $result){
-            $return['user']=(object) array();
+            /*$return['user']=(object) array();
             $return['token_device']='';
             $return['error_type']='token_device_invalid';
-            return $return;
+            return $return;*/
+            $response['error_type'] = '';
+            $response['user']['token_auth']='';
+            $response['user']['token_csrf'] = '';
+            $response['user']['token_device'] = '';
+            $response['user']['id'] = 0;
+            $response['user']['name_en'] = '';
+            $response['user']['name_bn'] = '';
+            $response['user']['info'] = (object) array();
+            $response['user']['tasks'] = array();
+            return $response;
         }
 
         $response = array();
