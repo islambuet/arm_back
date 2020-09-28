@@ -278,18 +278,29 @@ class Login extends Root_controller {
         for($i=0; $i<Module_task_helper::$MAX_MODULE_ACTIONS; $i++){
             $actions[]='user_group.action_'.$i;
         }
+
         $action = implode(',', $actions);
 
         $this->db->from(TABLE_LOGIN_SETUP_USER.' user');
         $this->db->join(TABLE_SYSTEM_USER_GROUP.' user_group', 'user_group.id = user.user_group_id');
-        $this->db->select("
-            user.id,
-            user.name_en,
-            user.name_bn"
-            );
+        $this->db->select("user.*");
         $action?$this->db->select($action):'';
         $this->db->where('user.id',$user_id);
         $result = $this->db->get()->row_array();
+        $user_info = (object) array();
+        $user_info->id = $result['id'];
+        $user_info->name_en = $result['name_en'];
+        $user_info->name_bn = $result['name_bn'];
+        /*$user_action_tasks = (object) array();
+        foreach($result as $key=>$value)
+        {
+            if(substr($key,0,6)=="action"){
+                $user_action_tasks->$key = $value;
+            }
+        }*/
+        /*$item=(object) array();
+        $item->user = $result;
+        $tasks = $result;*/
         if(! $result){
             /*$return['user']=(object) array();
             $return['token_device']='';
@@ -315,8 +326,9 @@ class Login extends Root_controller {
         $response['user']['id'] = $result['id'];
         $response['user']['name_en'] = $result['name_en'];
         $response['user']['name_bn'] = $result['name_bn'];
-        $response['user']['info'] = $result;
-        $response['user']['tasks'] = Module_task_helper::get_tasks($result['user_group_id']);
+        $response['user']['info'] = $user_info;
+        //$response['user']['actions'] = $user_action_tasks;
+        $response['user']['tasks'] = Module_task_helper::get_users_tasks($result);
         return $response;
     }
 } 

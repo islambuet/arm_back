@@ -12,4 +12,5 @@ class Encrypt_decrypt_helper
     public static function get_decrypt($string){
         return openssl_decrypt($string,Encrypt_decrypt_helper::$ENCRYPTED_DECRYPTED_METHOD,Encrypt_decrypt_helper::$ENCRYPTED_DECRYPTED_KEY);
     }
+    // get csrf
 }

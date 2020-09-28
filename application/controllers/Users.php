@@ -12,12 +12,32 @@ class Users extends Root_Controller
     }
     public function get_tasks() {
         //$ajax['error_type']='';
-        $ajax['user'] = User_helper::get_user();
-        //$ajax['tasks']=$this->get_users_tasks($user);
-        //$ajax['tasks']=$this->get_users_tasks(1);
+        $user = User_helper::get_user();
+        $tasks=Module_task_helper::get_users_tasks($user);
+        $ajax['error_type'] = 'UNAUTHORIZED';
+        $ajax['user']=array();
+        $ajax['user']['tasks']=array();
+        if($tasks){
+            $ajax['error_type'] = '';
+            $ajax['user']=$user;
+            $ajax['user']['tasks']=$tasks;
+        }
         $this->json_return($ajax);
     }
-    private function get_users_tasks($user_group_id) // user parameter
+    public function get_user(){
+        $user = User_helper::get_user();
+        if($user){
+            $ajax['error_type']='';
+            $ajax['user']['id'] = $user['id'];
+            $ajax['user']['name_en'] = $user['name_en'];
+            $ajax['user']['name_bn'] = $user['name_bn'];
+            $this->json_return($ajax);
+        } else {
+            $ajax['error_type']='NOT_FOUND';
+        }
+        $this->json_return($ajax);
+    }
+    /*private function get_users_tasks($user_group_id) // user parameter
     {
         // if user == null return blank array
         $user_group=Query_helper::get_info(TABLE_SYSTEM_USER_GROUP,'*',array('id ='.$user_group_id),1);
@@ -76,9 +96,6 @@ class Users extends Root_Controller
         }
 
         return $tree;
-    }
-    public function get_user(){
-
-    }
+    }*/
 
 }

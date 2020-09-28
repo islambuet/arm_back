@@ -47,23 +47,16 @@ class Module_task_helper
             }
         }
     }
-    // dummy
-    public static function get_tasks($user_group_id) {
-        /*$ajax['error_type']='';
-        $ajax['tasks']=$CI->get_users_tasks(1);
-        $CI->json_return($ajax);*/
-        $tasks = Module_task_helper::get_users_tasks($user_group_id);
-        return $tasks;
-    }
-    public static function get_users_tasks($user) // user parameter
+    public static function get_users_tasks($user)
     {
-        // if user == null return blank array
+        if(!$user){
+            return array();
+        }
         $CI = & get_instance();
-        $user_group=Query_helper::get_info(TABLE_SYSTEM_USER_GROUP,'*',array('id ='.$user),1);
         $role_data=array();
-        if(strlen($user_group['action_0'])>1)
+        if(strlen($user['action_0'])>1)
         {
-            $role_data=explode(',',trim($user_group['action_0'],','));
+            $role_data=explode(',',trim($user['action_0'],','));
         }
         $CI->db->from(TABLE_SYSTEM_TASK);
         $CI->db->order_by('ordering');
@@ -92,7 +85,7 @@ class Module_task_helper
     }
     public static function get_user_sub_tasks(&$list, $parent)
     {
-        $CI = & get_instance();
+        // $CI = & get_instance();
         $tree = array();
         foreach ($parent as $key=>$element)
         {
@@ -115,41 +108,6 @@ class Module_task_helper
             }
         }
 
-        return $tree;
-    }
-    public static function get_users_tasks_old($user_group_id) // user parameter
-    {
-        // if user == null return blank array
-        $CI = & get_instance();
-        $user_group=Query_helper::get_info(TABLE_SYSTEM_USER_GROUP,'*',array('id ='.$user_group_id),1);
-        $role_data=array();
-        if(strlen($user_group['action_0'])>1)
-        {
-            $role_data=explode(',',trim($user_group['action_0'],','));
-        }
-        $CI->db->from(TABLE_SYSTEM_TASK);
-        $CI->db->order_by('ordering');
-        $results=$CI->db->get()->result_array();
-        $children=array();
-        foreach($results as $result)
-        {
-            if($result['type']=='TASK')
-            {
-                if(in_array($result['id'],$role_data))
-                {
-                    $children[$result['parent']][$result['id']]=$result;
-                }
-            }
-            else
-            {
-                $children[$result['parent']][$result['id']]=$result;
-            }
-        }
-        $tree=array();
-        if(isset($children[0]))
-        {
-            $tree = Module_task_helper::get_user_sub_tasks($children, $children[0]);
-        }
         return $tree;
     }
 }

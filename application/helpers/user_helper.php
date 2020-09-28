@@ -10,15 +10,15 @@ class User_helper
     function __construct($id)
     {
         $CI = & get_instance();
-        $this->username_password_same=false;
+        /*$this->username_password_same=false;
         $result=Query_helper::get_info(TABLE_LOGIN_SETUP_USER,'*',array('id ='.$id),1);
-        if($result && (md5($result['user_name'])==$result['password'])) {
+        if($result && (md5($result['mobile_no'])==$result['password'])) {
             $this->username_password_same=true;
         } else {
             foreach ($result as $key => $value) {
                 $this->$key = $value;
             }
-        }
+        }*/
     }
 
     public static function get_user()
@@ -33,36 +33,43 @@ class User_helper
         {
             $token_auth = $CI->input->post('token_auth');
             if($token_auth){
-                $result = Query_helper::get_info(TABLE_LOGIN_USER_SESSIONS,array('*'),array('token_auth ="' .$token_auth.'"'),1);
-                if($result){
-                    if(($time-$result['time_start'])>Configuration_helper::get_session_expire() ){
-                        $response['error_type'] = 'SESSION_EXPIRE';
-                        return $response;
+                $result_session = Query_helper::get_info(TABLE_LOGIN_USER_SESSIONS,array('*'),array('token_auth ="' .$token_auth.'"'),1);
+                if($result_session){
+                    if(($time-$result_session['time_start'])>Configuration_helper::get_session_expire() ){
+                        // $response['error_type'] = 'SESSION_EXPIRE';
+                        return null;
                     }
-                    $user = $CI->db->get_where(TABLE_LOGIN_SETUP_USER, array('id' => $result['user_id'],'status'=>SYSTEM_STATUS_ACTIVE))->row();
+                    $actions = array();
+                    for($i=0; $i<Module_task_helper::$MAX_MODULE_ACTIONS; $i++){
+                        $actions[]='user_group.action_'.$i;
+                    }
+                    $action = implode(',', $actions);
+                    //$user = $CI->db->get_where(TABLE_LOGIN_SETUP_USER, array('id' => $result_session['user_id'],'status'=>SYSTEM_STATUS_ACTIVE))->row();
+                    $CI->db->from(TABLE_LOGIN_SETUP_USER.' user');
+                    $CI->db->join(TABLE_SYSTEM_USER_GROUP.' user_group', 'user_group.id = user.user_group_id');
+                    $CI->db->select("user.*");
+                    if($action){$CI->db->select($action);}
+                    $CI->db->where('user.id',$result_session['user_id']);
+                    $user = $CI->db->get()->row_array();
                     if($user){
                         $CI->load->helper('encrypt_decrypt');
-                        $token_csrf_generated = Encrypt_decrypt_helper::get_encrypt('CSRF_'.$time.'_'.$result['user_id']);
+                        //$token_csrf_generated = Encrypt_decrypt_helper::get_encrypt('CSRF_'.$time.'_'.$user['id']);
                         $data_session = array(
                             'time_start'=> $time,
-                            'csrf_new'=> $token_csrf_generated,
-                            'csrf_old'=> $result['csrf_new'],
+                            //'csrf_new'=> $token_csrf_generated,
+                            //'csrf_old'=> $result_session['csrf_new'],
                         );
-                        Query_helper::update(TABLE_LOGIN_USER_SESSIONS,$data_session,array("id = ".$result['id']),false);
-
-                        User_helper::$logged_user = new User_helper($result['user_id']);
+                        Query_helper::update(TABLE_LOGIN_USER_SESSIONS,$data_session,array("id = ".$result_session['id']),false);
+                        User_helper::$logged_user = $user;
                         return User_helper::$logged_user;
                     } else {
-                        $response['error_type'] = 'USER_NOT_FOUND';
-                        return $response;
+                        return null;
                     }
                 } else {
-                    $response['error_type'] = 'SESSION_NOT_FOUND';
-                    return $response;
+                    return null;
                 }
             } else {
-                $response['error_type'] = 'TOKEN_AUTH_NOT_FOUND';
-                return $response;
+                return null;
             }
         }
     }
