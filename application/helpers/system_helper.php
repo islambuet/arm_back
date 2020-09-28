@@ -29,7 +29,7 @@ class System_helper
             'value_new'=>json_encode($value_new),
             'date_created'=>$time,
             'date_created_string'=>date('d-M-Y h:i:s A',$time),
-            'user_created'=>$user->id?$user->id:-1
+            'user_created'=>$user?$user->id:-1
         );
         Query_helper::add($table_name,$data,false);
     }
