@@ -37,6 +37,12 @@ class Users extends Root_Controller
         }
         $this->json_return($ajax);
     }
+    public function get_permission(){
+        $permission = Module_task_helper::get_permission('Sys_module_task');
+        echo '<pre>';
+        print_r($permission);
+        echo '</pre>';
+    }
     /*private function get_users_tasks($user_group_id) // user parameter
     {
         // if user == null return blank array
