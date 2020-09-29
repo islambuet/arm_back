@@ -112,14 +112,14 @@ class Module_task_helper
     }
     public static function get_permission($controller_name)
     {
-        $CI = & get_instance();
+        // $CI = & get_instance();
         $user=User_helper::get_user();
         $permissions = array();
         for($i=0; $i<Module_task_helper::$MAX_MODULE_ACTIONS; $i++){
             $permissions['action_'.$i]=0;
         }
         if($user){
-            $item=Query_helper::get_info(TABLE_SYSTEM_TASK,array('id'),array('controller ="'.$controller_name.'"','status ="'.SYSTEM_STATUS_ACTIVE.'"'),1);
+            $item=Query_helper::get_info(TABLE_SYSTEM_TASK,array('id'),array('controller = "'.$controller_name.'"', 'status = "'.SYSTEM_STATUS_ACTIVE.'"'),1);
             if($item){
                 for($i=0;$i<Module_task_helper::$MAX_MODULE_ACTIONS;$i++)
                 {
