@@ -73,6 +73,18 @@ class User_helper
             }
         }
     }
-    // get new csrf
+    public static function get_user_response_info($user){
+        $CI = & get_instance();
+        $CI->load->helper('upload');
+        $response_user = array();
+        $response_user['id'] = $user['id'];
+        $response_user['name_en'] = $user['name_en'];
+        $response_user['name_bn'] = $user['name_bn'];
+        $response_user['info'] = array(
+            'id'=>$user['id'],
+            'profile_picture'=>Upload_helper::$IMAGE_LOGIN_BASE_URL.$user['image_location']
+        );
+        return $response_user;
+    }
 
 }

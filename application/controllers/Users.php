@@ -14,7 +14,7 @@ class Users extends Root_Controller
         //$ajax['error_type']='';
         $user = User_helper::get_user();
         $tasks=Module_task_helper::get_users_tasks($user);
-        $ajax['error_type'] = 'UNAUTHORIZED';
+        $ajax['error_type'] = '';
         $ajax['user']=array();
         $ajax['user']['tasks']=array();
         if($tasks){

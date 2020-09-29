@@ -318,16 +318,11 @@ class Login extends Root_controller {
             return $response;
         }
 
-        $response = array();
         $response['error_type'] = '';
+        $response['user'] = User_helper::get_user_response_info($result);
         $response['user']['token_auth']=$token_auth_generated;
         $response['user']['token_csrf'] = $token_csrf_generated;
         $response['user']['token_device'] = $token_device_response;
-        $response['user']['id'] = $result['id'];
-        $response['user']['name_en'] = $result['name_en'];
-        $response['user']['name_bn'] = $result['name_bn'];
-        $response['user']['info'] = $user_info;
-        //$response['user']['actions'] = $user_action_tasks;
         $response['user']['tasks'] = Module_task_helper::get_users_tasks($result);
         return $response;
     }
