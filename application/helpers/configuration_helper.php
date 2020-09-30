@@ -40,6 +40,10 @@ class Configuration_helper
     {
         return isset(Configuration_helper::$config['LOGIN_SESSION_EXPIRES'])?Configuration_helper::$config['LOGIN_SESSION_EXPIRES']:10;
     }
+    public static function is_site_off_line()
+    {
+        return isset(Configuration_helper::$config['SITE_OFF_LINE'])&&(Configuration_helper::$config['SITE_OFF_LINE']==1)?true:false;
+    }
     /* END LOGIN PURPOSE*/
 
 }
