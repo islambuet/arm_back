@@ -12,24 +12,31 @@ class Encrypt_decrypt_helper
     public static function get_decrypt($string){
         return openssl_decrypt($string,Encrypt_decrypt_helper::$ENCRYPTED_DECRYPTED_METHOD,Encrypt_decrypt_helper::$ENCRYPTED_DECRYPTED_KEY);
     }
-    public static function get_token($token)
+    public static function csrf_update()
     {
         $CI = & get_instance();
+        $time=time();
         $user=User_helper::get_user();
-        $response = array();
-        for($i=0; $i<Module_task_helper::$MAX_MODULE_ACTIONS; $i++){
-            $permissions['action_'.$i]=0;
+        $data = array();
+        $data['csrf_old'] = $user['csrf_new'];
+        $data['csrf_new'] =  Encrypt_decrypt_helper::get_encrypt('CSRF_'.$time.'_'.$user['id']);;
+        $CI->load->helper('encrypt_decrypt');
+        Query_helper::update(TABLE_LOGIN_USER_SESSIONS,$data,array("id = ".$user['csrf_id']),false);
+        return $data['csrf_new'];
+    }
+    public static function csrf_check(){
+        $CI = & get_instance();
+        $time=time();
+        $user=User_helper::get_user();
+        $csrf = $CI->input->post('token_csrf');
+        if($csrf!=$user['csrf_new']){
+            $ajax['token_csrf']=$user['csrf_new'];
+            if($csrf==$user['csrf_old']){
+                $ajax['error_type'] = '';
+            } else {
+                $ajax['error_type'] = 'TOKEN_INVALID';
+            }
+            $CI->json_return($ajax);
         }
-        if($user){
-            $CI->load->helper('encrypt_decrypt');
-            $token_csrf_generated = Encrypt_decrypt_helper::get_encrypt('CSRF_'.$time.'_'.$user['id']);
-            $data_session = array(
-                'time_start'=> $time,
-                'csrf_new'=> $token_csrf_generated,
-                'csrf_old'=> $result_session['csrf_new'],
-            );
-            Query_helper::update(TABLE_LOGIN_USER_SESSIONS,$data_session,array("id = ".$result_session['id']),false);
-        }
-        return $response;
     }
 }

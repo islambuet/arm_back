@@ -61,7 +61,7 @@ class Setup_system_configures  extends Root_Controller {
         }
         $user = User_helper::get_user();
         if($user){
-            if($this->permissions['action_1']==1 || $this->permissions['action_2']==1){
+            if($this->permissions['action_2']==1){
                 $ajax['error_type']='';
                 $ajax['item']=Query_helper::get_info(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,'*',array('id ='.$item_id),1);
             }
@@ -74,6 +74,7 @@ class Setup_system_configures  extends Root_Controller {
         $user = User_helper::get_user();
         if($user){
             if($this->permissions['action_1']==1 || $this->permissions['action_2']==1){
+                Encrypt_decrypt_helper::csrf_check();
                 $item_id=$this->input->post('item_id');
                 $data=$this->input->post('item');
                 $time = time();
@@ -90,12 +91,12 @@ class Setup_system_configures  extends Root_Controller {
                     $data['date_created'] = time();
                     Query_helper::add(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,$data);
                 }
-                //update token
-                //$ajax[token_save]=new token
+                $token_csrf = Encrypt_decrypt_helper::csrf_update();
                 $this->db->trans_complete();   //DB Transaction Handle END
                 if ($this->db->trans_status() === TRUE)
                 {
                     $ajax['error_type']='';
+                    $ajax['token_csrf']=$token_csrf;
                 }
                 else
                 {

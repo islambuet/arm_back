@@ -60,6 +60,9 @@ class User_helper
                             //'csrf_old'=> $result_session['csrf_new'],
                         );
                         Query_helper::update(TABLE_LOGIN_USER_SESSIONS,$data_session,array("id = ".$result_session['id']),false);
+                        $user['csrf_id']=$result_session['id'];
+                        $user['csrf_old']=$result_session['csrf_old'];
+                        $user['csrf_new']=$result_session['csrf_new'];
                         User_helper::$logged_user = $user;
                         return User_helper::$logged_user;
                     } else {
