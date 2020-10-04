@@ -75,19 +75,23 @@ class Setup_system_configures  extends Root_Controller {
         if($user){
             if($this->permissions['action_1']==1 || $this->permissions['action_2']==1){
                 Encrypt_decrypt_helper::csrf_check();
+//                echo '<pre>';
+//                print_r($this->input->post());
+//                echo '</pre>';
+//                die();
                 $item_id=$this->input->post('item_id');
                 $data=$this->input->post('item');
                 $time = time();
                 $this->db->trans_start();  //DB Transaction Handle START
                 if($item_id>0)
                 {
-                    $data['user_updated'] = $user->id;;
+                    $data['user_updated'] = $user['id'];
                     $data['date_updated'] = $time;
                     Query_helper::update(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,$data,array("id = ".$item_id));
                 }
                 else
                 {
-                    $data['user_created'] = $user->id;
+                    $data['user_created'] = $user['id'];
                     $data['date_created'] = time();
                     Query_helper::add(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,$data);
                 }

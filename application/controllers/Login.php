@@ -228,10 +228,29 @@ class Login extends Root_controller {
                 $device_id = $result['id'];
                 // $data_device = $device;
             } else {
-                $return['user']=(object) array();
+                /*$return['user']=(object) array();
                 $return['token_device']='';
-                $return['error']='token_device_invalid';
-                return $return;
+                $return['error_type']='token_device_invalid';
+                return $return;*/
+
+                $this->load->library('user_agent');
+
+                $token_device_response = Encrypt_decrypt_helper::get_encrypt($time);
+                $device_info = array(
+                    'browser'=> $this->agent->browser(),
+                    'version'=> $this->agent->version(),
+                    'mobile'=> $this->agent->mobile(),
+                    'robot'=> $this->agent->robot(),
+                    'platform'=> $this->agent->platform(),
+                    'agent_string'=> $this->agent->agent_string(),
+                );
+                $data_device=array(
+                    'token_device' => $token_device_response,
+                    'device_info' => json_encode($device_info),
+                    'ip'=> $this->input->ip_address(),
+                    'time_register' => $time
+                );
+                $device_id=Query_helper::add(TABLE_LOGIN_USER_DEVICES,$data_device,false);
             }
         } else {
 

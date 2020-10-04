@@ -29,13 +29,18 @@ class Encrypt_decrypt_helper
         $time=time();
         $user=User_helper::get_user();
         $csrf = $CI->input->post('token_csrf');
+//        echo '<pre>';
+//        print_r($csrf);
+//        echo '</pre>';
+//        die();
         if($csrf!=$user['csrf_new']){
             $ajax['token_csrf']=$user['csrf_new'];
             if($csrf==$user['csrf_old']){
-                $ajax['error_type'] = '';
+                $ajax['error_type'] = 'SAVE_ALREADY';
             } else {
                 $ajax['error_type'] = 'TOKEN_INVALID';
             }
+
             $CI->json_return($ajax);
         }
     }
