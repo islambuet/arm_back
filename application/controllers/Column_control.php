@@ -8,12 +8,14 @@ class Column_control extends Root_Controller
     }
     public function save()
     {
+        $ajax['error_type']='UNAUTHORIZED';
+        $user = User_helper::get_user();
         $controller=$this->input->post('controller');
         $method=$this->input->post('method');
         $permission = Module_task_helper::get_permission($controller);
-        $user = User_helper::get_user();
         if($user){
-            if($permission['action_0']==1){
+            if($permission['action_1']==1){
+                Encrypt_decrypt_helper::csrf_check();
                 $data=array();
                 $hidden_columns=json_encode($this->input->post('hidden_columns'));//need verification
                 $data['columns']=$hidden_columns;
@@ -21,25 +23,25 @@ class Column_control extends Root_Controller
                 $time = time();
                 $this->db->trans_start();  //DB Transaction Handle START
                 if($item)
-                {   $data['user_updated'] = $user->id;;
+                {   $data['user_updated'] = $user['id'];;
                     $data['date_updated'] = $time;
                     Query_helper::update(TABLE_SYSTEM_USER_HIDDEN_COLUMNS,$data,array("id = ".$item['id']));
                 }
                 else
                 {
-                    $data['user_id']=$user->id;
+                    $data['user_id']=$user['id'];
                     $data['controller']=$controller;
                     $data['method']=$method;
-                    $data['user_created'] = $user->id;
+                    $data['user_created'] = $user['id'];
                     $data['date_created'] = time();
                     Query_helper::add(TABLE_SYSTEM_USER_HIDDEN_COLUMNS,$data);
                 }
-                //update token
-                //$ajax[token_save]=new token
+                $token_csrf = Encrypt_decrypt_helper::csrf_update();
                 $this->db->trans_complete();   //DB Transaction Handle END
                 if ($this->db->trans_status() === TRUE)
                 {
                     $ajax['error_type']='';
+                    $ajax['token_csrf']=$token_csrf;
                 }
                 else
                 {
