@@ -16,3 +16,7 @@ CONST TABLE_LOGIN_LOCATION_REGION =  'arm_login_2021.login_location_region';
 CONST TABLE_LOGIN_LOCATION_AREA =  'arm_login_2021.login_location_area';
 CONST TABLE_LOGIN_LOCATION_TERRITORY =  'arm_login_2021.login_location_territory';
 
+// Products
+CONST TABLE_LOGIN_SETUP_PRODUCT_CROPS =  'arm_login_2021.login_setup_product_crops';
+CONST TABLE_LOGIN_SETUP_PRODUCT_CROP_TYPES =  'arm_login_2021.login_setup_product_crop_types';
+
