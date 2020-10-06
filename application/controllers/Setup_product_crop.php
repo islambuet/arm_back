@@ -65,7 +65,18 @@ class Setup_product_crop  extends Root_Controller {
         if($user){
             if($this->permissions['action_2']==1){
                 $ajax['error_type']='';
-                $ajax['item']=Query_helper::get_info(TABLE_LOGIN_SETUP_PRODUCT_CROPS,'*',array('id ='.$item_id),1);
+                $item=Query_helper::get_info(TABLE_LOGIN_SETUP_PRODUCT_CROPS,'*',array('id ='.$item_id),1);
+                if(!$item){
+                    // should be use hack table
+                    $ajax['error_type']='INVALID_TRY';
+                    $this->json_return($ajax);
+                }
+                if($item['status']==SYSTEM_STATUS_DELETE){
+                    // should be use hack table
+                    $ajax['error_type']='INVALID_TRY';
+                    $this->json_return($ajax);
+                }
+                $ajax['item']=$item;
             }
         }
         $this->json_return($ajax);
@@ -76,16 +87,31 @@ class Setup_product_crop  extends Root_Controller {
         $user = User_helper::get_user();
         if($user){
             if($this->permissions['action_1']==1 || $this->permissions['action_2']==1){
+                $item_id=$this->input->post('item_id');
+                $data=$this->input->post('item');
+                $time = time();
                 if(!$this->check_validation())
                 {
                     $ajax['error_type']='ERROR_DATA';
                     $ajax['error_message']=$this->message;
                     $this->json_return($ajax);
                 }
+                if($item_id>0)
+                {
+                    $item=Query_helper::get_info(TABLE_LOGIN_SETUP_PRODUCT_CROPS,'*',array('id ='.$item_id),1);
+                    if(!$item){
+                        // should be use hack table
+                        $ajax['error_type']='INVALID_TRY';
+                        $this->json_return($ajax);
+                    }
+                    if($item['status']==SYSTEM_STATUS_DELETE){
+                        // should be use hack table
+                        $ajax['error_type']='INVALID_TRY';
+                        $this->json_return($ajax);
+                    }
+                }
                 Encrypt_decrypt_helper::csrf_check();
-                $item_id=$this->input->post('item_id');
-                $data=$this->input->post('item');
-                $time = time();
+
                 $this->db->trans_start();  //DB Transaction Handle START
                 if($item_id>0)
                 {
@@ -117,7 +143,7 @@ class Setup_product_crop  extends Root_Controller {
     private function check_validation()
     {
         $this->load->library('form_validation');
-        $this->form_validation->set_rules('item[name]',$this->lang->line('LABEL_NAME'),'required');
+        $this->form_validation->set_rules('item[name]','Name','required');
         if($this->form_validation->run() == FALSE)
         {
             $this->message=validation_errors();
