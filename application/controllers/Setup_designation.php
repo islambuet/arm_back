@@ -6,10 +6,12 @@
  * Time: 3:07 PM
  */
 
-class Setup_system_configures  extends Root_Controller {
+class Setup_designation  extends Root_Controller {
+    public $message;
     public function __construct()
     {
         parent::__construct();
+        $this->message="";
     }
     public function initialize()
     {
@@ -19,7 +21,7 @@ class Setup_system_configures  extends Root_Controller {
             if($this->permissions['action_0']==1){
                 $ajax['error_type']='';
                 $ajax['permissions']=$this->permissions;
-                $table_fields = $this->db->field_data(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES);
+                $table_fields = $this->db->field_data(TABLE_LOGIN_SETUP_DESIGNATION);
                 $ajax["default_item"]=array();
                 $ajax['hidden_columns']=array();
                 foreach ($table_fields as $field)
@@ -35,6 +37,7 @@ class Setup_system_configures  extends Root_Controller {
                     }
                     //$ajax['hidden_columns']=array('status');
                 }
+                $ajax['designations']=$this->get_designation_table_tree();
             }
         }
         $this->json_return($ajax);
@@ -46,7 +49,7 @@ class Setup_system_configures  extends Root_Controller {
         if($user){
             if($this->permissions['action_0']==1){
                 $ajax['error_type']='';
-                $ajax['items']=Query_helper::get_info(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,'*',array('status!="'.SYSTEM_STATUS_DELETE.'"'));
+                $ajax['items']=$this->get_designation_table_tree();
             }
         }
         $this->json_return($ajax);
@@ -63,7 +66,7 @@ class Setup_system_configures  extends Root_Controller {
         if($user){
             if($this->permissions['action_2']==1){
                 $ajax['error_type']='';
-                $item=Query_helper::get_info(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,'*',array('id ='.$item_id),1);
+                $item=Query_helper::get_info(TABLE_LOGIN_SETUP_DESIGNATION,'*',array('id ='.$item_id),1);
                 if(!$item){
                     // should be use hack table
                     $ajax['error_type']='INVALID_TRY';
@@ -96,7 +99,7 @@ class Setup_system_configures  extends Root_Controller {
                 }
                 if($item_id>0)
                 {
-                    $item=Query_helper::get_info(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,'*',array('id ='.$item_id),1);
+                    $item=Query_helper::get_info(TABLE_LOGIN_SETUP_DESIGNATION,'*',array('id ='.$item_id),1);
                     if(!$item){
                         // should be use hack table
                         $ajax['error_type']='INVALID_TRY';
@@ -108,19 +111,21 @@ class Setup_system_configures  extends Root_Controller {
                         $this->json_return($ajax);
                     }
                 }
+
                 Encrypt_decrypt_helper::csrf_check();
+
                 $this->db->trans_start();  //DB Transaction Handle START
                 if($item_id>0)
                 {
                     $data['user_updated'] = $user['id'];
                     $data['date_updated'] = $time;
-                    Query_helper::update(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,$data,array("id = ".$item_id));
+                    Query_helper::update(TABLE_LOGIN_SETUP_DESIGNATION,$data,array("id = ".$item_id));
                 }
                 else
                 {
                     $data['user_created'] = $user['id'];
                     $data['date_created'] = time();
-                    Query_helper::add(TABLE_LOGIN_SETUP_SYSTEM_CONFIGURES,$data);
+                    Query_helper::add(TABLE_LOGIN_SETUP_DESIGNATION,$data);
                 }
                 $token_csrf = Encrypt_decrypt_helper::csrf_update();
                 $this->db->trans_complete();   //DB Transaction Handle END
@@ -140,12 +145,52 @@ class Setup_system_configures  extends Root_Controller {
     private function check_validation()
     {
         $this->load->library('form_validation');
-        $this->form_validation->set_rules('item[purpose]',$this->lang->line('LABEL_NAME'),'required');
+        $this->form_validation->set_rules('item[name]','Name','required');
+        $this->form_validation->set_rules('item[parent]','Parent','required');
+        $this->form_validation->set_rules('item[status]','Status','required');
         if($this->form_validation->run() == FALSE)
         {
             $this->message=validation_errors();
             return false;
         }
         return true;
+    }
+    private function get_designation_table_tree()
+    {
+        $this->db->from(TABLE_LOGIN_SETUP_DESIGNATION);
+        $this->db->order_by('ordering');
+        $results=$this->db->get()->result_array();
+        $children=array();
+        foreach($results as $result)
+        {
+            $children[$result['parent']]['ids'][$result['id']]=$result['id'];
+            $children[$result['parent']]['designations'][$result['id']]=$result;
+        }
+        $level0=$children[0]['designations'];
+        $tree=array();
+        foreach ($level0 as $designation)
+        {
+            $this->get_sub_designation_tree($designation,'',$tree,$children);
+        }
+        return $tree;
+    }
+
+    private function get_sub_designation_tree($designation,$prefix,&$tree,$children)
+    {
+        //$tree[]=array('prefix'=>$prefix,'designation'=>$designation);
+        $designation['name'] = $prefix.$designation['name'];
+        $tree[]=$designation;
+        $subs=array();
+        if(isset($children[$designation['id']]))
+        {
+            $subs=$children[$designation['id']]['designations'];
+        }
+        if(sizeof($subs)>0)
+        {
+            foreach($subs as $sub)
+            {
+                $this->get_sub_designation_tree($sub,$prefix.'- ',$tree,$children);
+            }
+        }
     }
 } 

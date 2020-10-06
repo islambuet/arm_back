@@ -1,6 +1,15 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
-
+/*
+1	LOGIN_MAX_WRONG_PASSWORD -- Maximum allowed wrong password.2 means account will suspend 3rd time	-- 3
+2	MOBILE_VERIFICATION	-- 1 for active 0 for off	-- 0
+3	LOGIN_OTP_LIMIT_LAST_NUMBER	-- table last number of opt limit query -- 5
+4	LOGIN_NUMBER_OF_OTP_CHECK	-- number of opt checking compare with otp table 	-- 5
+5	LOGIN_OTP_EXPIRES	-- 60*5--5minutes	-- 2000
+6	LOGIN_OTP_INTERVAL	-- next time opt send (config value second)	-- 100
+7	LOGIN_SESSION_EXPIRES -- session expire time (config value second) -- 10000
+8	SITE_OFF_LINE -- Configuration for keeping the Site Offline or, Not.	-- 1232
+*/
 class Configuration_helper
 {
     public static $config = array();
